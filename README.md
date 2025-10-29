@@ -32,6 +32,14 @@ The Pillars Events Calendar provides healthcare professionals and staff with an 
 ### Installation
 
 ```bash
+# Open Terminal and run:
+node -v
+npm -v
+
+#Install pnpm globally
+npm install -g pnpm
+pnpm -v
+
 # Clone the repository
 git clone https://github.com/Legend1280/PillarsEvents.git
 cd PillarsEvents

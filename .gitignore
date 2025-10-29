@@ -104,3 +104,6 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+
+# Lockfiles from other managers (standardize on pnpm)
+package-lock.json
