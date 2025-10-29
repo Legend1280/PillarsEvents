@@ -3,10 +3,13 @@ import cors from 'cors';
 import dotenv from 'dotenv'; 
 import routes from './routes/index.js';
 import pool from './config/database.js';
+import morgan from 'morgan';
 
 dotenv.config();
 
 const app = express();
+
+app.use(morgan(':method :url :status :response-time ms'));
 
 // CORS: allow local dev frontends
 const allowedOrigins = new Set([
