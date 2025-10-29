@@ -1,6 +1,10 @@
 import express from 'express';
 import cors from 'cors';
+import dotenv from 'dotenv'; 
 import routes from './routes/index.js';
+import pool from './config/database.js';
+
+dotenv.config();
 
 const app = express();
 
@@ -9,6 +13,7 @@ const allowedOrigins = new Set([
   'http://localhost:3000',
   'http://localhost:5173',
 ]);
+
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin || allowedOrigins.has(origin)) return cb(null, true);
