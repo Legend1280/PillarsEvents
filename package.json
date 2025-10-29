@@ -5,6 +5,10 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite --host",
+    "client": "vite --host",
+    "server": "node server/index.js",
+    "server:watch": "nodemon --watch server --ext js,mjs server/index.js",
+    "dev:both": "concurrently \"pnpm server:watch\" \"pnpm client\"",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "preview": "vite preview --host",
@@ -61,9 +65,12 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
     "wouter": "^3.3.5",
-    "zod": "^4.1.12"
+    "zod": "^4.1.12",
+    "cors": "^2.8.5"
   },
   "devDependencies": {
+    "concurrently": "^9.0.1",
+    "nodemon": "^3.1.7",
     "cross-env": "^7.0.3",
     "@builder.io/vite-plugin-jsx-loc": "^0.1.1",
     "@tailwindcss/typography": "^0.5.15",
