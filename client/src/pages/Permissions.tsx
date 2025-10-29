@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { CheckCircle2, Lock } from 'lucide-react';
 

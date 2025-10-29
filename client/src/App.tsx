@@ -1,5 +1,4 @@
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster, TooltipProvider } from "@/components/ui";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -9,14 +8,15 @@ import { EventsProvider } from "./contexts/EventsContext";
 import Login from "./pages/Login";
 import Permissions from "./pages/Permissions";
 import Calendar from "./pages/Calendar";
+import { ROUTES } from "./routes";
 
 function Router() {
   return (
     <Switch>
-      <Route path={"/"} component={Login} />
-      <Route path={"/permissions"} component={Permissions} />
-      <Route path={"/calendar"} component={Calendar} />
-      <Route path={"/404"} component={NotFound} />
+      <Route path={ROUTES.root} component={Login} />
+      <Route path={ROUTES.permissions} component={Permissions} />
+      <Route path={ROUTES.calendar} component={Calendar} />
+      <Route path={ROUTES.notFound} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>
