@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import pool from '../config/database.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 const router = Router();
@@ -50,7 +50,11 @@ router.post('/auth/login', async (req, res) => {
     const user = userResult.rows[0];
 
     // Verify password (frontend sends SHA-256 hashed password)
-    const bcrypt = require('bcryptjs');
+    console.log('===============================');
+    console.log('Plain Password (from frontend):', password);
+    console.log('Stored Hash (from DB):', user.password_hash);
+    console.log('===============================');
+
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
     if (!isPasswordValid) {
@@ -58,6 +62,8 @@ router.post('/auth/login', async (req, res) => {
         error: 'Invalid credentials'
       });
     }
+
+    console.log('✅ Password matched successfully!');
 
     // Generate JWT token
     const token = jwt.sign(
@@ -148,6 +154,33 @@ router.post('/auth/verify', async (req, res) => {
     res.status(500).json({
       error: 'Internal server error'
     });
+  }
+});
+
+router.post('/auth/hash', async (req, res) => {
+  try {
+    const { password } = req.body; // expect plain password
+    if (!password) {
+      return res.status(400).json({ error: 'Password is required' });
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    console.log('===============================');
+    console.log('Plain Password:', password);
+    console.log('Generated Bcrypt Hash:', hashedPassword);
+    console.log('===============================');
+
+    // Return the hash so you can copy it and update DB via psql or admin UI
+    res.json({
+      password,
+      hashedPassword,
+      note: 'Copy this hashedPassword and store it in users.password_hash in PostgreSQL.'
+    });
+  } catch (error) {
+    console.error('Error generating hash:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
