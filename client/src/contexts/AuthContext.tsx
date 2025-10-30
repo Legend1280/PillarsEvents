@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User } from '@/types';
 
 interface AuthContextType {
@@ -10,53 +10,49 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for demo purposes
-const MOCK_USERS: Record<string, { password: string; user: User }> = {
-  'admin@pillars.care': {
-    password: 'admin123',
-    user: {
-      id: '1',
-      email: 'admin@pillars.care',
-      name: 'Admin User',
-      hasPostingAccess: true,
-    },
-  },
-  'user@pillars.care': {
-    password: 'user123',
-    user: {
-      id: '2',
-      email: 'user@pillars.care',
-      name: 'Regular User',
-      hasPostingAccess: false,
-    },
-  },
-  'doctor@pillars.care': {
-    password: 'doctor123',
-    user: {
-      id: '3',
-      email: 'doctor@pillars.care',
-      name: 'Dr. Smith',
-      hasPostingAccess: true,
-    },
-  },
-};
+// In-memory initialization from localStorage to persist sessions
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const mockUser = MOCK_USERS[email];
-    if (mockUser && mockUser.password === password) {
-      setUser(mockUser.user);
-      return true;
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (_) {
+      // ignore corrupt storage
     }
-    return false;
+  }, []);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) return false;
+
+      const data = await response.json();
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
+      return true;
+    } catch (_) {
+      return false;
+    }
   };
 
   const logout = () => {
+    try {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    } catch (_) {
+      // ignore
+    }
     setUser(null);
   };
 
