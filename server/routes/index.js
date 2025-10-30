@@ -65,7 +65,7 @@ router.post('/auth/login', async (req, res) => {
 
     console.log('✅ Password matched successfully!');
 
-    // Generate JWT token
+    // Generate access token (24h)
     const token = jwt.sign(
       {
         userId: user.id,
@@ -74,6 +74,16 @@ router.post('/auth/login', async (req, res) => {
       },
       process.env.JWT_SECRET || 'your-fallback-secret-key',
       { expiresIn: '24h' }
+    );
+
+    // Generate refresh token (e.g., 7 days)
+    const refreshToken = jwt.sign(
+      {
+        userId: user.id,
+        tokenType: 'refresh'
+      },
+      process.env.REFRESH_JWT_SECRET || process.env.JWT_SECRET || 'your-fallback-secret-key',
+      { expiresIn: '7d' }
     );
 
     // Update last_login timestamp
@@ -85,6 +95,7 @@ router.post('/auth/login', async (req, res) => {
     // Return success response
     res.json({
       token,
+      refreshToken,
       user: {
         id: user.id,
         email: user.email,
@@ -102,58 +113,86 @@ router.post('/auth/login', async (req, res) => {
   }
 });
 
-// POST /api/auth/verify (optional - for token verification)
-router.post('/auth/verify', async (req, res) => {
+// GET /api/auth/me - returns current user based on Bearer token
+router.get('/auth/me', async (req, res) => {
   try {
-    const { token } = req.body;
+    const authHeader = req.headers['authorization'] || '';
+    const [, token] = authHeader.split(' '); // Expect "Bearer <token>"
 
     if (!token) {
-      return res.status(400).json({
-        error: 'Token is required'
-      });
+      return res.status(401).json({ error: 'Authorization token missing' });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-fallback-secret-key');
 
-    // Get fresh user data
     const userQuery = `
       SELECT id, email, name, role, has_posting_access
       FROM users 
       WHERE id = $1
     `;
-
     const userResult = await pool.query(userQuery, [decoded.userId]);
 
     if (userResult.rows.length === 0) {
-      return res.status(401).json({
-        error: 'User not found'
-      });
+      return res.status(401).json({ error: 'User not found' });
     }
 
     const user = userResult.rows[0];
-
     res.json({
-      valid: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        hasPostingAccess: user.has_posting_access,
-        role: user.role
-      }
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      hasPostingAccess: user.has_posting_access,
+      role: user.role,
     });
-
   } catch (error) {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        error: 'Invalid or expired token'
-      });
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    console.error('Auth me error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/auth/refresh - issues a new access token given a valid refresh token
+router.post('/auth/refresh', async (req, res) => {
+  try {
+    const { refreshToken } = req.body || {};
+    if (!refreshToken) {
+      return res.status(400).json({ error: 'Refresh token is required' });
     }
 
-    console.error('Token verification error:', error);
-    res.status(500).json({
-      error: 'Internal server error'
-    });
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.REFRESH_JWT_SECRET || process.env.JWT_SECRET || 'your-fallback-secret-key'
+    );
+
+    if (decoded.tokenType !== 'refresh') {
+      return res.status(400).json({ error: 'Invalid token type' });
+    }
+
+    // Optionally: check user still exists
+    const userQuery = `
+      SELECT id, email, role FROM users WHERE id = $1
+    `;
+    const userResult = await pool.query(userQuery, [decoded.userId]);
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    const user = userResult.rows[0];
+
+    const newAccessToken = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || 'your-fallback-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    res.json({ token: newAccessToken });
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Invalid or expired refresh token' });
+    }
+    console.error('Token refresh error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
