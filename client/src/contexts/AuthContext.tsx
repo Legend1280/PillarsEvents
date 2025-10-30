@@ -6,6 +6,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   requestAccess: () => void;
+  initializing: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -14,6 +15,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [initializing, setInitializing] = useState<boolean>(true);
 
   useEffect(() => {
     const verifyExistingSession = async () => {
@@ -71,6 +73,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('refreshToken');
         setUser(null);
       }
+      finally {
+        setInitializing(false);
+      }
     };
 
     verifyExistingSession();
@@ -116,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, requestAccess }}>
+    <AuthContext.Provider value={{ user, login, logout, requestAccess, initializing }}>
       {children}
     </AuthContext.Provider>
   );

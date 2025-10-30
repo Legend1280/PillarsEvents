@@ -6,14 +6,15 @@ import { CheckCircle2, Lock } from 'lucide-react';
 
 export default function Permissions() {
   const [, setLocation] = useLocation();
-  const { user, requestAccess } = useAuth();
+  const { user, requestAccess, initializing } = useAuth();
 
   useEffect(() => {
-    if (!user) {
+    if (!initializing && !user) {
       setLocation('/');
     }
-  }, [user, setLocation]);
+  }, [user, initializing, setLocation]);
 
+  if (initializing) return null;
   if (!user) return null;
 
   const handleContinue = () => {
