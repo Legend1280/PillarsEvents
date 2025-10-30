@@ -22,7 +22,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const storedToken = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
-        if (!storedToken || !storedUser) return;
+        if (!storedToken || !storedUser) {
+          setInitializing(false);
+          return;
+        }
 
         // Try to fetch current user using /auth/me
         const res = await fetch('http://localhost:8000/api/auth/me', {

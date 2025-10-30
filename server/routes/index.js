@@ -223,4 +223,26 @@ router.post('/auth/hash', async (req, res) => {
   }
 });
 
+// POST /api/auth/logout - accepts a token and responds with success
+router.post('/auth/logout', async (req, res) => {
+  try {
+    const { token } = req.body || {};
+    if (!token) {
+      return res.status(400).json({ error: 'Token is required' });
+    }
+
+    // Optional: verify format; in stateless JWT flow we don't need to revoke here
+    try {
+      jwt.verify(token, process.env.JWT_SECRET || 'your-fallback-secret-key');
+    } catch (_) {
+      // Even if token is invalid/expired, we can still return success to allow client logout
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

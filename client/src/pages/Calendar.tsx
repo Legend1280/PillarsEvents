@@ -16,7 +16,7 @@ import {
 
 export default function Calendar() {
   const [, setLocation] = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, initializing } = useAuth();
   const { events, getEventsByDate } = useEvents();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -25,16 +25,30 @@ export default function Calendar() {
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
 
   useEffect(() => {
-    if (!user) {
+    if (!initializing && !user) {
       setLocation('/');
     }
-  }, [user, setLocation]);
+  }, [user, initializing, setLocation]);
 
+  if (initializing) return null;
   if (!user) return null;
 
-  const handleLogout = () => {
-    logout();
-    setLocation('/');
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        await fetch('http://localhost:8000/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+      }
+    } catch (_) {
+      // ignore network errors; proceed with local logout
+    } finally {
+      logout();
+      setLocation('/');
+    }
   };
 
   const getDaysInMonth = (date: Date) => {
