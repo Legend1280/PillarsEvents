@@ -7,11 +7,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEvents } from '@/contexts/EventsContext';
 import { Event, Department, EventTag } from '@/types';
 import { toast } from 'sonner';
-import { Calendar, Clock, MapPin, User, Tag, Building2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, User, Tag, Building2, Pencil, Trash2 } from 'lucide-react';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -26,8 +36,10 @@ const HOSTS = ['Dr. Johnson', 'Dr. Smith', 'Sarah Williams', 'Tech Team', 'Admin
 
 export default function EventModal({ isOpen, onClose, selectedDate, event }: EventModalProps) {
   const { user } = useAuth();
-  const { addEvent, updateEvent, getEventsByDate } = useEvents();
+  const { addEvent, updateEvent, deleteEvent, getEventsByDate } = useEvents();
   const [isEditing, setIsEditing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -65,7 +77,7 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
     }
   }, [event, isOpen]);
 
-  const handleSubmit = (status: 'draft' | 'published') => {
+  const handleSubmit = async (status: 'draft' | 'published') => {
     if (!selectedDate || !user) return;
 
     if (!formData.title || !formData.time || !formData.host || !formData.location) {
@@ -80,15 +92,19 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
       createdBy: user.id,
     };
 
-    if (event) {
-      updateEvent(event.id, eventData);
-      toast.success('Event updated successfully');
-    } else {
-      addEvent(eventData);
-      toast.success(status === 'draft' ? 'Event saved as draft' : 'Event published successfully');
+    try {
+      if (event) {
+        await updateEvent(event.id, eventData);
+        toast.success('Event updated successfully');
+      } else {
+        await addEvent(eventData);
+        toast.success(status === 'draft' ? 'Event saved as draft' : 'Event published successfully');
+      }
+      onClose();
+    } catch (error) {
+      // Error toast is already shown in the context
+      console.error('Error saving event:', error);
     }
-
-    onClose();
   };
 
   const handleTagToggle = (tag: string) => {
@@ -100,11 +116,48 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
     }));
   };
 
+  const handleDeleteClick = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!event) return;
+
+    try {
+      setIsDeleting(true);
+      await deleteEvent(event.id);
+      toast.success('Event deleted successfully');
+      setShowDeleteDialog(false);
+      setTimeout(() => {
+        onClose();
+      }, 100);
+    } catch (error) {
+      console.error('Error deleting event:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleCloseAll = () => {
+    setShowDeleteDialog(false);
+    setIsEditing(false);
+    onClose();
+  };
+
   const dayEvents = selectedDate ? getEventsByDate(selectedDate) : [];
   const canEdit = user?.hasPostingAccess && (isEditing || !event);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <>
+    <Dialog open={isOpen && !showDeleteDialog} onOpenChange={(open) => {
+      if (!open && !showDeleteDialog) {
+        onClose();
+      }
+    }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
@@ -164,8 +217,30 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
                 <p className="text-muted-foreground">{event.description}</p>
               </div>
             )}
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={onClose}>Close</Button>
+            <div className="flex justify-between items-center gap-2 pt-4">
+              {user?.hasPostingAccess ? (
+                <>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleDeleteClick}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={onClose}>Close</Button>
+                    <Button onClick={handleEdit}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Update
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="w-full flex justify-end">
+                  <Button variant="outline" onClick={onClose}>Close</Button>
+                </div>
+              )}
             </div>
           </div>
         ) : !user?.hasPostingAccess ? (
@@ -302,6 +377,43 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
         )}
       </DialogContent>
     </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteDialog && event && (
+        <AlertDialog 
+          open={showDeleteDialog} 
+          onOpenChange={(open) => {
+            if (!open && !isDeleting) {
+              setShowDeleteDialog(false);
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Event</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "<strong>{event.title}</strong>"? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel 
+                disabled={isDeleting}
+                onClick={() => setShowDeleteDialog(false)}
+              >
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteConfirm}
+                disabled={isDeleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+    </>
   );
 }
 

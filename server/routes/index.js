@@ -245,4 +245,414 @@ router.post('/auth/logout', async (req, res) => {
   }
 });
 
+// ============================================
+// MIDDLEWARE - Authentication
+// ============================================
+const authenticateToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'] || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+
+    if (!token) {
+      return res.status(401).json({ error: 'Authorization token missing' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-fallback-secret-key');
+
+    // Fetch user details to check permissions
+    const userQuery = 'SELECT id, email, role, has_posting_access FROM users WHERE id = $1';
+    const userResult = await pool.query(userQuery, [decoded.userId]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    // Attach user to request object
+    req.user = userResult.rows[0];
+    next();
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    console.error('Authentication error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// ============================================
+// MIDDLEWARE - Check Posting Access
+// ============================================
+const checkPostingAccess = (req, res, next) => {
+  if (!req.user.has_posting_access) {
+    return res.status(403).json({
+      error: 'Access denied. You do not have posting permissions.'
+    });
+  }
+  next();
+};
+
+// ============================================
+// VALIDATION - Event Input
+// ============================================
+const validateEventInput = (req, res, next) => {
+  const { title, date, time, description, host, location, department, tags, status } = req.body;
+  const errors = [];
+
+  // Required fields validation
+  if (!title || typeof title !== 'string' || title.trim().length === 0) {
+    errors.push('Title is required and must be a non-empty string');
+  }
+  if (!date || isNaN(Date.parse(date))) {
+    errors.push('Date is required and must be a valid ISO date string');
+  }
+  if (!time || typeof time !== 'string') {
+    errors.push('Time is required and must be a string (e.g., "10:00 AM")');
+  }
+  if (!host || typeof host !== 'string') {
+    errors.push('Host is required');
+  }
+  if (!location || typeof location !== 'string') {
+    errors.push('Location is required');
+  }
+  if (!department || typeof department !== 'string') {
+    errors.push('Department is required');
+  }
+
+  // Optional fields validation (only validate if provided)
+  if (description !== undefined && typeof description !== 'string') {
+    errors.push('Description must be a string');
+  }
+
+  // Tags validation (optional, but if provided must be an array)
+  if (tags !== undefined && !Array.isArray(tags)) {
+    errors.push('Tags must be an array');
+  }
+
+  // Status validation
+  if (!status || !['published', 'draft'].includes(status)) {
+    errors.push('Status must be either "published" or "draft"');
+  }
+
+  if (errors.length > 0) {
+    return res.status(400).json({ error: 'Validation failed', details: errors });
+  }
+
+  // Set defaults for optional fields
+  if (!description) {
+    req.body.description = '';
+  }
+  if (!tags || !Array.isArray(tags)) {
+    req.body.tags = [];
+  }
+
+  next();
+};
+
+// ============================================
+// GET /api/events - Get all events with filters
+// ============================================
+router.get('/events', async (req, res) => {
+  try {
+    const { month, year, department, status, page = 1, limit = 50 } = req.query;
+
+    // Build WHERE clause
+    let whereClause = 'WHERE 1=1';
+    const queryParams = [];
+    let paramCount = 1;
+
+    // Filter by month and year
+    if (month && year) {
+      whereClause += ` AND EXTRACT(MONTH FROM date) = $${paramCount} AND EXTRACT(YEAR FROM date) = $${paramCount + 1}`;
+      queryParams.push(parseInt(month), parseInt(year));
+      paramCount += 2;
+    } else if (year) {
+      whereClause += ` AND EXTRACT(YEAR FROM date) = $${paramCount}`;
+      queryParams.push(parseInt(year));
+      paramCount += 1;
+    }
+
+    // Filter by department
+    if (department) {
+      whereClause += ` AND department = $${paramCount}`;
+      queryParams.push(department);
+      paramCount += 1;
+    }
+
+    // Filter by status
+    if (status && ['published', 'draft'].includes(status)) {
+      whereClause += ` AND status = $${paramCount}`;
+      queryParams.push(status);
+      paramCount += 1;
+    }
+
+    // Get total count for pagination
+    const countQuery = `SELECT COUNT(*) FROM events ${whereClause}`;
+    const countResult = await pool.query(countQuery, queryParams);
+    const total = parseInt(countResult.rows[0].count);
+
+    // Build main query
+    const queryText = `
+      SELECT 
+        id, title, date, time, description, host, location, 
+        department, tags, status, image_url as "imageUrl", 
+        created_by as "createdBy", created_at as "createdAt", 
+        updated_at as "updatedAt"
+      FROM events
+      ${whereClause}
+      ORDER BY date DESC, created_at DESC
+      LIMIT $${paramCount} OFFSET $${paramCount + 1}
+    `;
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
+
+    queryParams.push(limitNum, offset);
+
+    // Execute main query
+    const result = await pool.query(queryText, queryParams);
+
+    return res.status(200).json({
+      events: result.rows,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum)
+    });
+
+  } catch (error) {
+    console.error('Get events error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// GET /api/events/:id - Get single event
+// ============================================
+router.get('/events/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const queryText = `
+      SELECT 
+        id, title, date, time, description, host, location, 
+        department, tags, status, image_url as "imageUrl", 
+        created_by as "createdBy", created_at as "createdAt", 
+        updated_at as "updatedAt"
+      FROM events
+      WHERE id = $1
+    `;
+
+    const result = await pool.query(queryText, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    return res.status(200).json({ event: result.rows[0] });
+
+  } catch (error) {
+    console.error('Get event error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// POST /api/events - Create new event
+// ============================================
+router.post('/events', authenticateToken, checkPostingAccess, validateEventInput, async (req, res) => {
+  try {
+    const { title, date, time, description, host, location, department, tags, status, imageUrl } = req.body;
+    const userId = req.user.id;
+
+    const queryText = `
+      INSERT INTO events (
+        title, date, time, description, host, location, 
+        department, tags, status, image_url, created_by
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, $11)
+      RETURNING 
+        id, title, date, time, description, host, location, 
+        department, tags, status, image_url as "imageUrl", 
+        created_by as "createdBy", created_at as "createdAt", 
+        updated_at as "updatedAt"
+    `;
+
+    const values = [
+      title.trim(),
+      date,
+      time,
+      description ? description.trim() : '',
+      host.trim(),
+      location.trim(),
+      department,
+      JSON.stringify(Array.isArray(tags) ? tags : []),
+      status,
+      imageUrl || null,
+      userId
+    ];
+
+    const result = await pool.query(queryText, values);
+
+    res.status(201).json({
+      event: result.rows[0],
+      message: 'Event created successfully'
+    });
+
+  } catch (error) {
+    console.error('Create event error:', error);
+
+    // Handle unique constraint violations
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Event with this data already exists' });
+    }
+
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// PUT /api/events/:id - Update event
+// ============================================
+router.put('/events/:id', authenticateToken, checkPostingAccess, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, date, time, description, host, location, department, tags, status, imageUrl } = req.body;
+
+    // First, check if event exists
+    const checkQuery = 'SELECT id, created_by FROM events WHERE id = $1';
+    const checkResult = await pool.query(checkQuery, [id]);
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    // Build dynamic update query
+    const updates = [];
+    const values = [];
+    let paramCount = 1;
+
+    if (title !== undefined) {
+      updates.push(`title = $${paramCount}`);
+      values.push(title.trim());
+      paramCount++;
+    }
+    if (date !== undefined) {
+      if (isNaN(Date.parse(date))) {
+        return res.status(400).json({ error: 'Invalid date format' });
+      }
+      updates.push(`date = $${paramCount}`);
+      values.push(date);
+      paramCount++;
+    }
+    if (time !== undefined) {
+      updates.push(`time = $${paramCount}`);
+      values.push(time);
+      paramCount++;
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramCount}`);
+      values.push(typeof description === 'string' ? description.trim() : '');
+      paramCount++;
+    }
+    if (host !== undefined) {
+      updates.push(`host = $${paramCount}`);
+      values.push(host.trim());
+      paramCount++;
+    }
+    if (location !== undefined) {
+      updates.push(`location = $${paramCount}`);
+      values.push(location.trim());
+      paramCount++;
+    }
+    if (department !== undefined) {
+      updates.push(`department = $${paramCount}`);
+      values.push(department);
+      paramCount++;
+    }
+    if (tags !== undefined) {
+      if (!Array.isArray(tags)) {
+        return res.status(400).json({ error: 'Tags must be an array' });
+      }
+      updates.push(`tags = $${paramCount}::jsonb`);
+      values.push(JSON.stringify(tags));
+      paramCount++;
+    }
+    if (status !== undefined) {
+      if (!['published', 'draft'].includes(status)) {
+        return res.status(400).json({ error: 'Status must be "published" or "draft"' });
+      }
+      updates.push(`status = $${paramCount}`);
+      values.push(status);
+      paramCount++;
+    }
+    if (imageUrl !== undefined) {
+      updates.push(`image_url = $${paramCount}`);
+      values.push(imageUrl || null);
+      paramCount++;
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    // Add updated_at timestamp
+    updates.push(`updated_at = NOW()`);
+
+    // Add the id parameter
+    values.push(id);
+
+    const queryText = `
+      UPDATE events 
+      SET ${updates.join(', ')}
+      WHERE id = $${paramCount}
+      RETURNING 
+        id, title, date, time, description, host, location, 
+        department, tags, status, image_url as "imageUrl", 
+        created_by as "createdBy", created_at as "createdAt", 
+        updated_at as "updatedAt"
+    `;
+
+    const result = await pool.query(queryText, values);
+
+    return res.status(200).json({
+      event: result.rows[0],
+      message: 'Event updated successfully'
+    });
+
+  } catch (error) {
+    console.error('Update event error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// DELETE /api/events/:id - Delete event
+// ============================================
+router.delete('/events/:id', authenticateToken, checkPostingAccess, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if event exists
+    const checkQuery = 'SELECT id FROM events WHERE id = $1';
+    const checkResult = await pool.query(checkQuery, [id]);
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    // Delete the event
+    const deleteQuery = 'DELETE FROM events WHERE id = $1';
+    await pool.query(deleteQuery, [id]);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Event deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Delete event error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;
