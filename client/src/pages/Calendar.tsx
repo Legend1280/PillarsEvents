@@ -3,8 +3,9 @@ import { useLocation } from 'wouter';
 import { Button } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEvents } from '@/contexts/EventsContext';
-import { ChevronLeft, ChevronRight, LogOut, Plus, Filter } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LogOut, Plus, Filter, Users } from 'lucide-react';
 import EventModal from '@/components/EventModal';
+import { AccessRequestsDialog } from '@/components/permissions';
 import { Event, Department } from '@/types';
 import {
   Select,
@@ -23,6 +24,7 @@ export default function Calendar() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
+  const [isRequestsDialogOpen, setIsRequestsDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!initializing && !user) {
@@ -172,6 +174,17 @@ export default function Calendar() {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground hidden sm:inline">{user.name}</span>
+              {user.role === 'admin' && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsRequestsDialogOpen(true)}
+                  className="hidden sm:flex"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  View Requests
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
@@ -245,6 +258,14 @@ export default function Calendar() {
         selectedDate={selectedDate}
         event={selectedEvent}
       />
+
+      {/* Access Requests Dialog (Admin Only) */}
+      {user.role === 'admin' && (
+        <AccessRequestsDialog
+          isOpen={isRequestsDialogOpen}
+          onClose={() => setIsRequestsDialogOpen(false)}
+        />
+      )}
     </div>
   );
 }

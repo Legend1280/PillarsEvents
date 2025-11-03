@@ -738,8 +738,7 @@ router.get('/permissions/requests', authenticateToken, checkAdminRole, async (re
         u.email as "userEmail",
         ar.reason,
         ar.status,
-        ar.created_at as "createdAt",
-        ar.updated_at as "updatedAt"
+        ar.created_at as "createdAt"
       FROM access_requests ar
       JOIN users u ON ar.user_id = u.id
       ${whereClause}
@@ -796,7 +795,7 @@ router.post('/permissions/approve/:requestId', authenticateToken, checkAdminRole
 
       // Update request status
       await client.query(
-        'UPDATE access_requests SET status = $1, updated_at = NOW() WHERE id = $2',
+        'UPDATE access_requests SET status = $1 WHERE id = $2',
         ['approved', requestId]
       );
 
@@ -862,9 +861,9 @@ router.post('/permissions/deny/:requestId', authenticateToken, checkAdminRole, a
     // Update request status
     const updateQuery = `
       UPDATE access_requests 
-      SET status = 'denied', updated_at = NOW()
+      SET status = 'denied'
       WHERE id = $1
-      RETURNING id, user_id as "userId", status, updated_at as "updatedAt"
+      RETURNING id, user_id as "userId", status
     `;
 
     const result = await pool.query(updateQuery, [requestId]);
