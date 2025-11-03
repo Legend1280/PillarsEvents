@@ -160,7 +160,7 @@ export default function Calendar() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card">
+      <header className="sticky top-0 z-50 border-b border-border bg-card">
         <div className="container py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
