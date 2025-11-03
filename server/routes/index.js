@@ -292,6 +292,18 @@ const checkPostingAccess = (req, res, next) => {
 };
 
 // ============================================
+// MIDDLEWARE - Check Admin Role
+// ============================================
+const checkAdminRole = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({
+      error: 'Access denied. Admin privileges required.'
+    });
+  }
+  next();
+};
+
+// ============================================
 // VALIDATION - Event Input
 // ============================================
 const validateEventInput = (req, res, next) => {
@@ -651,6 +663,221 @@ router.delete('/events/:id', authenticateToken, checkPostingAccess, async (req, 
 
   } catch (error) {
     console.error('Delete event error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// POST /api/permissions/request-access - Request posting access
+// ============================================
+router.post('/permissions/request-access', authenticateToken, async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const userId = req.user.id;
+
+    // Check if user already has posting access
+    if (req.user.has_posting_access) {
+      return res.status(400).json({ error: 'You already have posting access' });
+    }
+
+    // Check if there's already a pending request for this user
+    const existingRequest = await pool.query(
+      'SELECT id, status FROM access_requests WHERE user_id = $1 AND status = $2',
+      [userId, 'pending']
+    );
+
+    if (existingRequest.rows.length > 0) {
+      return res.status(400).json({ 
+        error: 'You already have a pending access request',
+        requestId: existingRequest.rows[0].id
+      });
+    }
+
+    // Create new access request
+    const queryText = `
+      INSERT INTO access_requests (user_id, reason, status)
+      VALUES ($1, $2, 'pending')
+      RETURNING id, user_id as "userId", reason, status, created_at as "createdAt"
+    `;
+
+    const result = await pool.query(queryText, [userId, reason || '']);
+
+    return res.status(201).json({
+      requestId: result.rows[0].id,
+      status: result.rows[0].status,
+      message: 'Access request submitted successfully'
+    });
+
+  } catch (error) {
+    console.error('Request access error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// GET /api/permissions/requests - Get all access requests (Admin only)
+// ============================================
+router.get('/permissions/requests', authenticateToken, checkAdminRole, async (req, res) => {
+  try {
+    const { status } = req.query;
+
+    let whereClause = '';
+    const queryParams = [];
+
+    // Filter by status if provided
+    if (status && ['pending', 'approved', 'denied'].includes(status)) {
+      whereClause = 'WHERE ar.status = $1';
+      queryParams.push(status);
+    }
+
+    const queryText = `
+      SELECT 
+        ar.id,
+        ar.user_id as "userId",
+        u.name as "userName",
+        u.email as "userEmail",
+        ar.reason,
+        ar.status,
+        ar.created_at as "createdAt",
+        ar.updated_at as "updatedAt"
+      FROM access_requests ar
+      JOIN users u ON ar.user_id = u.id
+      ${whereClause}
+      ORDER BY 
+        CASE ar.status 
+          WHEN 'pending' THEN 1 
+          WHEN 'approved' THEN 2 
+          WHEN 'denied' THEN 3 
+        END,
+        ar.created_at DESC
+    `;
+
+    const result = await pool.query(queryText, queryParams);
+
+    return res.status(200).json({
+      requests: result.rows,
+      total: result.rows.length
+    });
+
+  } catch (error) {
+    console.error('Get requests error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// POST /api/permissions/approve/:requestId - Approve access request (Admin only)
+// ============================================
+router.post('/permissions/approve/:requestId', authenticateToken, checkAdminRole, async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    // Check if request exists and is pending
+    const requestQuery = 'SELECT id, user_id, status FROM access_requests WHERE id = $1';
+    const requestResult = await pool.query(requestQuery, [requestId]);
+
+    if (requestResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Access request not found' });
+    }
+
+    const request = requestResult.rows[0];
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({ 
+        error: `Request already ${request.status}`,
+        currentStatus: request.status
+      });
+    }
+
+    // Start transaction
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Update request status
+      await client.query(
+        'UPDATE access_requests SET status = $1, updated_at = NOW() WHERE id = $2',
+        ['approved', requestId]
+      );
+
+      // Grant posting access to user
+      await client.query(
+        'UPDATE users SET has_posting_access = true, updated_at = NOW() WHERE id = $1',
+        [request.user_id]
+      );
+
+      await client.query('COMMIT');
+
+      // Fetch updated user
+      const userQuery = `
+        SELECT id, email, name, role, has_posting_access as "hasPostingAccess"
+        FROM users WHERE id = $1
+      `;
+      const userResult = await client.query(userQuery, [request.user_id]);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Access request approved',
+        user: userResult.rows[0]
+      });
+
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+
+  } catch (error) {
+    console.error('Approve request error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// POST /api/permissions/deny/:requestId - Deny access request (Admin only)
+// ============================================
+router.post('/permissions/deny/:requestId', authenticateToken, checkAdminRole, async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { reason } = req.body;
+
+    // Check if request exists and is pending
+    const requestQuery = 'SELECT id, user_id, status FROM access_requests WHERE id = $1';
+    const requestResult = await pool.query(requestQuery, [requestId]);
+
+    if (requestResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Access request not found' });
+    }
+
+    const request = requestResult.rows[0];
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({ 
+        error: `Request already ${request.status}`,
+        currentStatus: request.status
+      });
+    }
+
+    // Update request status
+    const updateQuery = `
+      UPDATE access_requests 
+      SET status = 'denied', updated_at = NOW()
+      WHERE id = $1
+      RETURNING id, user_id as "userId", status, updated_at as "updatedAt"
+    `;
+
+    const result = await pool.query(updateQuery, [requestId]);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Access request denied',
+      request: result.rows[0],
+      denialReason: reason
+    });
+
+  } catch (error) {
+    console.error('Deny request error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

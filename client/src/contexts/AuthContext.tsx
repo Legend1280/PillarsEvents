@@ -118,9 +118,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const requestAccess = () => {
-    // In a real app, this would send a request to admin
-    alert('Access request sent to administrator. You will be notified when approved.');
+  const requestAccess = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('You must be logged in to request access.');
+        return;
+      }
+
+      const response = await fetch('http://localhost:8000/api/permissions/request-access', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          reason: 'I need posting access to create and manage events.'
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('✅ Access request sent to administrator successfully! You will be notified when approved.');
+      } else {
+        alert(data.error || 'Failed to send access request. Please try again.');
+      }
+    } catch (error) {
+      console.error('Request access error:', error);
+      alert('Failed to send access request. Please check your connection and try again.');
+    }
   };
 
   return (
