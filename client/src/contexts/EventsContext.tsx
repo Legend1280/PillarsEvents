@@ -33,19 +33,30 @@ export function EventsProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       console.log("fetch events response data", data);
       // Transform backend data to frontend format
-      const transformedEvents = data.events.map((event: any) => ({
-        id: event.id,
-        title: event.title,
-        date: new Date(event.date),
-        time: event.time,
-        description: event.description,
-        host: event.host,
-        location: event.location,
-        department: event.department,
-        tags: Array.isArray(event.tags) ? event.tags : (typeof event.tags === 'string' ? JSON.parse(event.tags) : []),
-        status: event.status,
-        createdBy: event.createdBy,
-      }));
+      const transformedEvents = data.events.map((event: any) => {
+        // Parse date as local date (YYYY-MM-DD format)
+        let eventDate: Date;
+        if (typeof event.date === 'string' && event.date.includes('-')) {
+          const [year, month, day] = event.date.split('T')[0].split('-').map(Number);
+          eventDate = new Date(year, month - 1, day); // month is 0-indexed
+        } else {
+          eventDate = new Date(event.date);
+        }
+        
+        return {
+          id: event.id,
+          title: event.title,
+          date: eventDate,
+          time: event.time,
+          description: event.description,
+          host: event.host,
+          location: event.location,
+          department: event.department,
+          tags: Array.isArray(event.tags) ? event.tags : (typeof event.tags === 'string' ? JSON.parse(event.tags) : []),
+          status: event.status,
+          createdBy: event.createdBy,
+        };
+      });
 
       setEvents(transformedEvents);
     } catch (error) {
@@ -73,10 +84,12 @@ export function EventsProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Format date as ISO string
-      const formattedDate = eventData.date instanceof Date 
-        ? eventData.date.toISOString() 
-        : new Date(eventData.date).toISOString();
+      // Format date as YYYY-MM-DD (local date without timezone conversion)
+      const date = eventData.date instanceof Date ? eventData.date : new Date(eventData.date);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`;
 
       const payload = {
         title: eventData.title,
@@ -108,11 +121,20 @@ export function EventsProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       console.log("add event response data", data);
       
+      // Parse date as local date
+      let eventDate: Date;
+      if (typeof data.event.date === 'string' && data.event.date.includes('-')) {
+        const [year, month, day] = data.event.date.split('T')[0].split('-').map(Number);
+        eventDate = new Date(year, month - 1, day);
+      } else {
+        eventDate = new Date(data.event.date);
+      }
+      
       // Add new event to state
       const newEvent: Event = {
         id: data.event.id,
         title: data.event.title,
-        date: new Date(data.event.date),
+        date: eventDate,
         time: data.event.time,
         description: data.event.description,
         host: data.event.host,
@@ -140,12 +162,14 @@ export function EventsProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Format date if present
+      // Format date if present (local date without timezone conversion)
       const payload: any = { ...eventData };
       if (payload.date) {
-        payload.date = payload.date instanceof Date 
-          ? payload.date.toISOString() 
-          : new Date(payload.date).toISOString();
+        const date = payload.date instanceof Date ? payload.date : new Date(payload.date);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        payload.date = `${year}-${month}-${day}`;
       }
 
       const response = await fetch(`${API_BASE_URL}/events/${id}`, {

@@ -405,7 +405,9 @@ router.get('/events', async (req, res) => {
     // Build main query
     const queryText = `
       SELECT 
-        id, title, date, time, description, host, location, 
+        id, title, 
+        TO_CHAR(date, 'YYYY-MM-DD') as date,
+        time, description, host, location, 
         department, tags, status, image_url as "imageUrl", 
         created_by as "createdBy", created_at as "createdAt", 
         updated_at as "updatedAt"
@@ -447,11 +449,13 @@ router.get('/events/:id', async (req, res) => {
 
     const queryText = `
       SELECT 
-        id, title, date, time, description, host, location, 
+        id, title, 
+        TO_CHAR(date, 'YYYY-MM-DD') as date,
+        time, description, host, location, 
         department, tags, status, image_url as "imageUrl", 
         created_by as "createdBy", created_at as "createdAt", 
         updated_at as "updatedAt"
-      FROM events
+      FROM events 
       WHERE id = $1
     `;
 
@@ -483,7 +487,9 @@ router.post('/events', authenticateToken, checkPostingAccess, validateEventInput
         department, tags, status, image_url, created_by
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, $11)
       RETURNING 
-        id, title, date, time, description, host, location, 
+        id, title, 
+        TO_CHAR(date, 'YYYY-MM-DD') as date,
+        time, description, host, location, 
         department, tags, status, image_url as "imageUrl", 
         created_by as "createdBy", created_at as "createdAt", 
         updated_at as "updatedAt"
@@ -618,7 +624,9 @@ router.put('/events/:id', authenticateToken, checkPostingAccess, async (req, res
       SET ${updates.join(', ')}
       WHERE id = $${paramCount}
       RETURNING 
-        id, title, date, time, description, host, location, 
+        id, title, 
+        TO_CHAR(date, 'YYYY-MM-DD') as date,
+        time, description, host, location, 
         department, tags, status, image_url as "imageUrl", 
         created_by as "createdBy", created_at as "createdAt", 
         updated_at as "updatedAt"
