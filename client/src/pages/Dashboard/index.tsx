@@ -10,12 +10,22 @@ export default function Dashboard() {
   const { user, requestAccess, initializing } = useAuth();
 
   useEffect(() => {
+    // Only redirect if initialization is complete AND user is still null
+    // Add a small delay to ensure state has settled
     if (!initializing && !user) {
-      setLocation('/');
+      const timer = setTimeout(() => {
+        if (!user) {
+          setLocation('/');
+        }
+      }, 50);
+      return () => clearTimeout(timer);
     }
   }, [user, initializing, setLocation]);
 
+  // Show nothing while initializing
   if (initializing) return null;
+  
+  // If still no user after initialization, show nothing (redirect will happen)
   if (!user) return null;
 
   const handleContinue = () => {

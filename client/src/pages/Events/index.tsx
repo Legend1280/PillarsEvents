@@ -18,16 +18,26 @@ export default function Events() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [departmentFilter, setDepartmentFilter] = useState<string>('All');
+  const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const [isRequestsDialogOpen, setIsRequestsDialogOpen] = useState(false);
 
   useEffect(() => {
+    // Only redirect if initialization is complete AND user is still null
+    // Add a small delay to ensure state has settled
     if (!initializing && !user) {
-      setLocation('/');
+      const timer = setTimeout(() => {
+        if (!user) {
+          setLocation('/');
+        }
+      }, 50);
+      return () => clearTimeout(timer);
     }
   }, [user, initializing, setLocation]);
 
+  // Show nothing while initializing
   if (initializing) return null;
+  
+  // If still no user after initialization, show nothing (redirect will happen)
   if (!user) return null;
 
   const handleLogout = async () => {

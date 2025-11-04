@@ -22,6 +22,9 @@ export default function Login() {
       const ok = await login(email, password);
       if (ok) {
         toast.success('Login successful!');
+        // Wait for React state to update before navigating
+        // This ensures user context is fully set before Dashboard checks it
+        await new Promise(resolve => setTimeout(resolve, 100));
         setLocation('/permissions');
       } else {
         toast.error('Invalid email or password');
