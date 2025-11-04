@@ -113,14 +113,14 @@ export default function Login() {
               Only verified Pillars members may post events.
             </p>
           </div>
-          <div className="demo-credentials">
+          {/* <div className="demo-credentials">
             <p className="demo-title">Demo Credentials:</p>
             <div className="demo-list">
               <p><strong>Admin:</strong> admin@pillars.care / admin123</p>
               <p><strong>User (no access):</strong> user@pillars.care / user123</p>
               <p><strong>Doctor:</strong> doctor@pillars.care / doctor123</p>
             </div>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
     </div>
