@@ -101,11 +101,14 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
       if (event) {
         await updateEvent(event.id, eventData);
         toast.success('Event updated successfully');
+        // Small delay to ensure state updates before closing
+        setTimeout(() => onClose(), 100);
       } else {
         await addEvent(eventData);
         toast.success(status === 'draft' ? 'Event saved as draft' : 'Event published successfully');
+        // Small delay to ensure state updates before closing
+        setTimeout(() => onClose(), 100);
       }
-      onClose();
     } catch (error) {
       console.error('Error saving event:', error);
     }
@@ -132,9 +135,10 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
       await deleteEvent(event.id);
       toast.success('Event deleted successfully');
       setShowDeleteDialog(false);
+      // Small delay to ensure state updates before closing
       setTimeout(() => {
         onClose();
-      }, 100);
+      }, 150);
     } catch (error) {
       console.error('Error deleting event:', error);
     } finally {

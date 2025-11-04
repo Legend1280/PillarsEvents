@@ -109,7 +109,7 @@ export const SelectContent = ({ children }: SelectContentProps) => {
   return (
     <div
       ref={contentRef}
-      className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-border bg-popover text-popover-foreground shadow-md"
+      className="absolute z-50 mt-1 max-h-60 w-full min-w-[200px] overflow-auto rounded-md border border-border bg-popover text-popover-foreground shadow-md"
     >
       <div className="p-1">
         {children}
@@ -128,8 +128,10 @@ export const SelectItem = ({ value, children }: SelectItemProps) => {
         onValueChange(value);
         setIsOpen(false);
       }}
-      className={`relative flex cursor-pointer items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none hover:bg-accent hover:text-accent-foreground ${
-        isSelected ? 'bg-accent' : ''
+      className={`relative flex cursor-pointer items-center rounded-sm py-2 pl-2 pr-8 mb-0.5 text-sm outline-none whitespace-nowrap transition-colors ${
+        isSelected 
+          ? 'bg-primary text-primary-foreground' 
+          : 'hover:bg-accent/50'
       }`}
     >
       {children}

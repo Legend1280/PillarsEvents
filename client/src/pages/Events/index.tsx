@@ -18,7 +18,7 @@ export default function Events() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [departmentFilter, setDepartmentFilter] = useState<string>('all');
+  const [departmentFilter, setDepartmentFilter] = useState<string>('All');
   const [isRequestsDialogOpen, setIsRequestsDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -88,7 +88,7 @@ export default function Events() {
     year: 'numeric',
   });
 
-  const filteredEvents = departmentFilter === 'all' 
+  const filteredEvents = departmentFilter === 'All' 
     ? events 
     : events.filter(e => e.department === departmentFilter);
 
@@ -114,7 +114,7 @@ export default function Events() {
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
       const dayEvents = getEventsByDate(date).filter(e => 
-        departmentFilter === 'all' || e.department === departmentFilter
+        departmentFilter === 'All' || e.department === departmentFilter
       );
       const isToday = date.toDateString() === new Date().toDateString();
 
@@ -182,7 +182,7 @@ export default function Events() {
                 <SelectValue placeholder="Filter by department" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
+                <SelectItem value="All">All Departments</SelectItem>
                 <SelectItem value="Cardiology">Cardiology</SelectItem>
                 <SelectItem value="Wellness">Wellness</SelectItem>
                 <SelectItem value="Imaging">Imaging</SelectItem>
