@@ -168,8 +168,8 @@ export default function AccessRequestsDialog({ isOpen, onClose }: AccessRequests
                     key={request.id}
                     className="border border-border rounded-lg p-4 bg-card hover:bg-accent/5 transition-colors"
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 space-y-2">
+                    <div className="flex flex-col gap-3">
+                      <div className="space-y-2">
                         <div className="flex items-center gap-3">
                           <div>
                             <h4 className="font-semibold text-foreground">{request.userName}</h4>
@@ -186,7 +186,7 @@ export default function AccessRequestsDialog({ isOpen, onClose }: AccessRequests
                           Requested: {new Date(request.createdAt).toLocaleString()}
                         </p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <Button
                           size="sm"
                           variant="default"

@@ -113,7 +113,123 @@ router.post('/auth/login', async (req, res) => {
   }
 });
 
+// ============================================
+// POST /api/auth/register - Register new user
+// ============================================
+router.post('/auth/register', async (req, res) => {
+  try {
+    const { email, password, name, role } = req.body;
+
+    // Validate input
+    if (!email || !password || !name) {
+      return res.status(400).json({
+        error: 'Email, password, and name are required'
+      });
+    }
+
+    // Validate role - only 'user' or 'doctor' allowed (not 'admin')
+    if (role && !['user', 'doctor'].includes(role)) {
+      return res.status(400).json({
+        error: 'Invalid role. Only "user" or "doctor" roles are allowed for registration'
+      });
+    }
+
+    const userRole = role || 'user'; // Default to 'user' if not specified
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        error: 'Invalid email format'
+      });
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      return res.status(400).json({
+        error: 'Password must be at least 6 characters long'
+      });
+    }
+
+    // Check if user already exists
+    const existingUserQuery = 'SELECT id FROM users WHERE email = $1';
+    const existingUser = await pool.query(existingUserQuery, [email.toLowerCase()]);
+
+    if (existingUser.rows.length > 0) {
+      return res.status(409).json({
+        error: 'User with this email already exists'
+      });
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Doctors get posting access by default, users don't
+    const hasPostingAccess = userRole === 'doctor';
+
+    // Insert new user (created_at, updated_at auto-set by DB defaults)
+    const insertQuery = `
+      INSERT INTO users (email, password_hash, name, role, has_posting_access, last_login)
+      VALUES ($1, $2, $3, $4, $5, NOW())
+      RETURNING id, email, password_hash, name, role, has_posting_access, created_at, updated_at, last_login
+    `;
+
+    const result = await pool.query(insertQuery, [
+      email.toLowerCase(),
+      passwordHash,
+      name.trim(),
+      userRole,
+      hasPostingAccess
+    ]);
+
+    const newUser = result.rows[0];
+
+    // Generate access token
+    const token = jwt.sign(
+      {
+        userId: newUser.id,
+        email: newUser.email,
+        role: newUser.role
+      },
+      process.env.JWT_SECRET || 'your-fallback-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    // Generate refresh token
+    const refreshToken = jwt.sign(
+      {
+        userId: newUser.id,
+        tokenType: 'refresh'
+      },
+      process.env.REFRESH_JWT_SECRET || process.env.JWT_SECRET || 'your-fallback-secret-key',
+      { expiresIn: '7d' }
+    );
+
+    // Return success response
+    res.status(200).json({
+      message: 'Registration successful',
+      token,
+      refreshToken,
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
+        hasPostingAccess: newUser.has_posting_access,
+        role: newUser.role
+      }
+    });
+
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+});
+
+// ============================================
 // GET /api/auth/me - returns current user based on Bearer token
+// ============================================
 router.get('/auth/me', async (req, res) => {
   try {
     const authHeader = req.headers['authorization'] || '';

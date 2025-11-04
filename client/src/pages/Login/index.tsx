@@ -97,6 +97,13 @@ export default function Login() {
           <div className="login-footer">
             <button
               type="button"
+              onClick={() => setLocation('/register')}
+              className="register-link"
+            >
+              Don't have an account? Create one
+            </button>
+            <button
+              type="button"
               onClick={handleRequestAccess}
               className="request-access-link"
             >
