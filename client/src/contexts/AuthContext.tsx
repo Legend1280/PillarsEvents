@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User } from '@/types';
 
 interface AuthContextType {
@@ -6,67 +6,152 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   requestAccess: () => void;
+  initializing: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for demo purposes
-const MOCK_USERS: Record<string, { password: string; user: User }> = {
-  'admin@pillars.care': {
-    password: 'admin123',
-    user: {
-      id: '1',
-      email: 'admin@pillars.care',
-      name: 'Admin User',
-      hasPostingAccess: true,
-    },
-  },
-  'user@pillars.care': {
-    password: 'user123',
-    user: {
-      id: '2',
-      email: 'user@pillars.care',
-      name: 'Regular User',
-      hasPostingAccess: false,
-    },
-  },
-  'doctor@pillars.care': {
-    password: 'doctor123',
-    user: {
-      id: '3',
-      email: 'doctor@pillars.care',
-      name: 'Dr. Smith',
-      hasPostingAccess: true,
-    },
-  },
-};
+// In-memory initialization from localStorage to persist sessions
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [initializing, setInitializing] = useState<boolean>(true);
+
+  useEffect(() => {
+    const verifyExistingSession = async () => {
+      try {
+        const storedToken = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
+        if (!storedToken || !storedUser) {
+          setInitializing(false);
+          return;
+        }
+
+        // Try to fetch current user using /auth/me
+        const res = await fetch('http://localhost:8000/api/auth/me', {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${storedToken}` },
+        });
+
+        if (res.ok) {
+          const me = await res.json();
+          localStorage.setItem('user', JSON.stringify(me));
+          setUser(me);
+          return;
+        }
+
+        if (res.status === 401) {
+          // Attempt refresh if we have a refresh token
+          const refreshToken = localStorage.getItem('refreshToken');
+          if (!refreshToken) throw new Error('no refresh token');
+
+          const refreshRes = await fetch('http://localhost:8000/api/auth/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken }),
+          });
+
+          if (!refreshRes.ok) throw new Error('refresh failed');
+
+          const { token: newToken } = await refreshRes.json();
+          localStorage.setItem('token', newToken);
+
+          const retryRes = await fetch('http://localhost:8000/api/auth/me', {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${newToken}` },
+          });
+
+          if (!retryRes.ok) throw new Error('me after refresh failed');
+
+          const me = await retryRes.json();
+          localStorage.setItem('user', JSON.stringify(me));
+          setUser(me);
+          return;
+        }
+
+        throw new Error('unexpected me error');
+      } catch (_) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refreshToken');
+        setUser(null);
+      }
+      finally {
+        setInitializing(false);
+      }
+    };
+
+    verifyExistingSession();
+  }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const mockUser = MOCK_USERS[email];
-    if (mockUser && mockUser.password === password) {
-      setUser(mockUser.user);
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) return false;
+
+      const data = await response.json();
+      localStorage.setItem('token', data.token);
+      if (data.refreshToken) {
+        localStorage.setItem('refreshToken', data.refreshToken);
+      }
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
       return true;
+    } catch (_) {
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
+    try {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
+    } catch (_) {
+      // ignore
+    }
     setUser(null);
   };
 
-  const requestAccess = () => {
-    // In a real app, this would send a request to admin
-    alert('Access request sent to administrator. You will be notified when approved.');
+  const requestAccess = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('You must be logged in to request access.');
+        return;
+      }
+
+      const response = await fetch('http://localhost:8000/api/permissions/request-access', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          reason: 'I need posting access to create and manage events.'
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('✅ Access request sent to administrator successfully! You will be notified when approved.');
+      } else {
+        alert(data.error || 'Failed to send access request. Please try again.');
+      }
+    } catch (error) {
+      console.error('Request access error:', error);
+      alert('Failed to send access request. Please check your connection and try again.');
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, requestAccess }}>
+    <AuthContext.Provider value={{ user, login, logout, requestAccess, initializing }}>
       {children}
     </AuthContext.Provider>
   );

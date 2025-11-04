@@ -44,12 +44,33 @@ pnpm -v
 git clone https://github.com/Legend1280/PillarsEvents.git
 cd PillarsEvents
 
-# Install dependencies
-cd client
+# Install dependencies (from project root)
 pnpm install
+```
 
-# Start development server
-pnpm dev
+### Development
+
+#### Option 1: Run Both Frontend + Backend Together
+```bash
+# Start both frontend and backend with auto-reload
+pnpm dev:both
+
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:8000
+```
+
+#### Option 2: Run Separately
+```bash
+# Terminal 1 - Frontend only  
+pnpm client
+# Frontend will run on http://localhost:3000
+```
+
+#### Test Backend API
+```bash
+# Test the backend is running
+curl http://localhost:8000/api/hello
+# Expected: {"message":"Backend is running successfully!"}
 ```
 
 The application will be available at `http://localhost:3000`
