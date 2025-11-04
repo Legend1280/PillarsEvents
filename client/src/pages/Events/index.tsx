@@ -98,7 +98,7 @@ export default function Events() {
     year: 'numeric',
   });
 
-  const filteredEvents = departmentFilter === 'All' 
+  const filteredEvents = departmentFilter === 'all' 
     ? events 
     : events.filter(e => e.department === departmentFilter);
 
@@ -124,7 +124,7 @@ export default function Events() {
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
       const dayEvents = getEventsByDate(date).filter(e => 
-        departmentFilter === 'All' || e.department === departmentFilter
+        departmentFilter === 'all' || e.department === departmentFilter
       );
       const isToday = date.toDateString() === new Date().toDateString();
 
@@ -189,10 +189,10 @@ export default function Events() {
             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
               <SelectTrigger className="w-[180px]">
                 <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filter by department" />
+                <span>{departmentFilter === 'all' ? 'All' : departmentFilter}</span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="All">All Departments</SelectItem>
+                <SelectItem value="all">All Departments</SelectItem>
                 <SelectItem value="Cardiology">Cardiology</SelectItem>
                 <SelectItem value="Wellness">Wellness</SelectItem>
                 <SelectItem value="Imaging">Imaging</SelectItem>

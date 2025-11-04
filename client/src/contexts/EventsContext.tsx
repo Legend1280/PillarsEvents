@@ -31,7 +31,6 @@ export function EventsProvider({ children }: { children: ReactNode }) {
       }
 
       const data = await response.json();
-      console.log("fetch events response data", data);
       // Transform backend data to frontend format
       const transformedEvents = data.events.map((event: any) => {
         // Parse date as local date (YYYY-MM-DD format)
@@ -119,7 +118,6 @@ export function EventsProvider({ children }: { children: ReactNode }) {
       }
 
       const data = await response.json();
-      console.log("add event response data", data);
       
       // Parse date as local date
       let eventDate: Date;
@@ -187,7 +185,6 @@ export function EventsProvider({ children }: { children: ReactNode }) {
       }
 
       const data = await response.json();
-      console.log("update event response data", data);
       
       // Update event in state
       setEvents(prev =>
@@ -224,7 +221,6 @@ export function EventsProvider({ children }: { children: ReactNode }) {
         },
       });
 
-      console.log("delete event response", response);
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to delete event');
