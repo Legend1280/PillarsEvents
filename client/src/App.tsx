@@ -1,21 +1,18 @@
-import { Toaster, TooltipProvider } from "@/components/ui";
-import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
-import ErrorBoundary from "./components/ErrorBoundary";
-import { ThemeProvider } from "./contexts/ThemeContext";
-import { AuthProvider } from "./contexts/AuthContext";
-import { EventsProvider } from "./contexts/EventsContext";
-import Login from "./pages/Login";
-import Permissions from "./pages/Permissions";
-import Calendar from "./pages/Calendar";
-import { ROUTES } from "./routes";
+import { Route, Switch } from 'wouter';
+import { Toaster } from 'sonner';
+import ErrorBoundary from './components/ErrorBoundary';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { EventsProvider } from './contexts/EventsContext';
+import { Login, Dashboard, Events, NotFound } from './pages';
+import { ROUTES } from './routes';
 
 function Router() {
   return (
     <Switch>
       <Route path={ROUTES.root} component={Login} />
-      <Route path={ROUTES.permissions} component={Permissions} />
-      <Route path={ROUTES.calendar} component={Calendar} />
+      <Route path={ROUTES.permissions} component={Dashboard} />
+      <Route path={ROUTES.calendar} component={Events} />
       <Route path={ROUTES.notFound} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
@@ -29,10 +26,8 @@ function App() {
       <ThemeProvider defaultTheme="light">
         <AuthProvider>
           <EventsProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Router />
-            </TooltipProvider>
+            <Toaster />
+            <Router />
           </EventsProvider>
         </AuthProvider>
       </ThemeProvider>
@@ -41,4 +36,3 @@ function App() {
 }
 
 export default App;
-
