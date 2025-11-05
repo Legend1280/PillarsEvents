@@ -20,7 +20,8 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogAction,
-  AlertDialogCancel
+  AlertDialogCancel,
+  TimeInput
 } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEvents } from '@/contexts/EventsContext';
@@ -280,11 +281,10 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="time">Time *</Label>
-                <Input
+                <TimeInput
                   id="time"
-                  type="time"
                   value={formData.time}
-                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, time: value })}
                   required
                 />
               </div>
