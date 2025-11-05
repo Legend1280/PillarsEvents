@@ -1,12 +1,12 @@
 [build]
   base = "client"
-  publish = "client/dist"
+  publish = "dist"
   command = "pnpm install && pnpm build"
 
 [build.environment]
   NODE_VERSION = "18"
   NPM_FLAGS = "--legacy-peer-deps"
 
-# Optional: if you want Netlify to detect workspace properly
 [functions]
   node_bundler = "esbuild"
+
