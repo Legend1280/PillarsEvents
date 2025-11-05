@@ -12,7 +12,7 @@ export const Header = ({ userName, userRole, onLogout, onViewRequests }: HeaderP
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card">
       <div className="container py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div className="flex items-center gap-4">
             <img src="/pillars-logo.png" alt="Pillars" className="h-10" />
             <div>
@@ -20,22 +20,22 @@ export const Header = ({ userName, userRole, onLogout, onViewRequests }: HeaderP
               <p className="text-sm text-muted-foreground">Pillars MSO + Health and Wellness Center</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             {userName && (
-              <span className="text-sm text-muted-foreground hidden sm:inline">{userName}</span>
+              <span className="text-sm text-muted-foreground text-center sm:text-left">{userName}</span>
             )}
             {userRole === 'admin' && onViewRequests && (
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={onViewRequests}
-                className="hidden sm:flex"
+                className="w-full sm:w-auto"
               >
                 <Users className="h-4 w-4 mr-2" />
                 View Requests
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={onLogout}>
+            <Button variant="outline" size="sm" onClick={onLogout} className="w-full sm:w-auto">
               <LogOut className="h-4 w-4 mr-2" />
               Logout
             </Button>
