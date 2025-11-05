@@ -44,7 +44,7 @@ export default function Events() {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await fetch('http://localhost:8000/api/auth/logout', {
+        await fetch('https://server-production-9019.up.railway.app/api/auth/logout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token }),

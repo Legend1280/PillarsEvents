@@ -33,7 +33,7 @@ export default function Register() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/register', {
+      const response = await fetch('https://server-production-9019.up.railway.app/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, name, role }),

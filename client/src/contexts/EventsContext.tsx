@@ -14,7 +14,7 @@ interface EventsContextType {
 
 const EventsContext = createContext<EventsContextType | undefined>(undefined);
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = 'https://server-production-9019.up.railway.app/api';
 
 export function EventsProvider({ children }: { children: ReactNode }) {
   const [events, setEvents] = useState<Event[]>([]);

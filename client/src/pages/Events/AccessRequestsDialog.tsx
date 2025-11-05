@@ -31,7 +31,7 @@ export default function AccessRequestsDialog({ isOpen, onClose }: AccessRequests
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/permissions/requests', {
+      const response = await fetch('https://server-production-9019.up.railway.app/api/permissions/requests', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -55,7 +55,7 @@ export default function AccessRequestsDialog({ isOpen, onClose }: AccessRequests
     setProcessingId(requestId);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/api/permissions/approve/${requestId}`, {
+      const response = await fetch(`https://server-production-9019.up.railway.app/api/permissions/approve/${requestId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -82,7 +82,7 @@ export default function AccessRequestsDialog({ isOpen, onClose }: AccessRequests
     setProcessingId(requestId);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/api/permissions/deny/${requestId}`, {
+      const response = await fetch(`https://server-production-9019.up.railway.app/api/permissions/deny/${requestId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
