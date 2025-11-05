@@ -1,7 +1,6 @@
 [build]
-  base = "client"
-  publish = "dist"
-  command = "cd .. && pnpm install && cd client && pnpm install && pnpm run build"
+  command = "pnpm install && pnpm run build"
+  publish = "dist/public"
 
 [build.environment]
   NODE_VERSION = "18"
