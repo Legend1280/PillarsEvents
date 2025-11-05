@@ -47,7 +47,7 @@ export const Modal = ({ isOpen, onClose, children, className = '' }: ModalProps)
   if (!isOpen) return null;
   
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Overlay */}
       <div
         className="fixed inset-0 bg-black/50"
@@ -57,11 +57,11 @@ export const Modal = ({ isOpen, onClose, children, className = '' }: ModalProps)
       {/* Modal Content */}
       <div
         ref={modalRef}
-        className={`relative z-50 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg border border-border bg-background p-6 shadow-lg mx-4 ${className}`}
+        className={`relative z-50 w-full max-h-[90vh] overflow-y-auto rounded-lg border border-border bg-background p-6 shadow-lg ${className}`}
       >
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-ring"
+          className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-ring z-10"
         >
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>

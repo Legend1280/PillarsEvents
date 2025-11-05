@@ -31,4 +31,5 @@ export {
   AlertDialogCancel
 } from './Modal';
 export { Loader } from './Loader';
+export { TimeInput } from './TimeInput';
 
