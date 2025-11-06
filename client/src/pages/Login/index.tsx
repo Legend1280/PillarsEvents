@@ -102,13 +102,13 @@ export default function Login() {
             >
               Don't have an account? Create one
             </button>
-            <button
+            {/* <button
               type="button"
               onClick={handleRequestAccess}
               className="request-access-link"
             >
               Request Event Posting Access
-            </button>
+            </button> */}
             <p className="login-note">
               Only verified Pillars members may post events.
             </p>
