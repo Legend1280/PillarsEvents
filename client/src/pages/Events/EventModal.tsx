@@ -21,7 +21,8 @@ import {
   AlertDialogFooter,
   AlertDialogAction,
   AlertDialogCancel,
-  TimeInput
+  TimeInput,
+  DateTimeRangeInput
 } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEvents } from '@/contexts/EventsContext';
@@ -46,6 +47,7 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [currentDate, setCurrentDate] = useState<Date>(selectedDate || new Date());
   
   const [formData, setFormData] = useState({
     title: '',
@@ -58,6 +60,10 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
   });
 
   useEffect(() => {
+    if (selectedDate) {
+      setCurrentDate(selectedDate);
+    }
+    
     if (event) {
       setFormData({
         title: event.title,
@@ -81,10 +87,10 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
       });
       setIsEditing(true);
     }
-  }, [event, isOpen]);
+  }, [event, isOpen, selectedDate]);
 
   const handleSubmit = async (status: 'draft' | 'published') => {
-    if (!selectedDate || !user) return;
+    if (!currentDate || !user) return;
 
     if (!formData.title || !formData.time || !formData.host || !formData.location) {
       toast.error('Please fill in all required fields');
@@ -93,7 +99,7 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
 
     const eventData = {
       ...formData,
-      date: selectedDate,
+      date: currentDate,
       status,
       createdBy: user.id,
     };
@@ -151,24 +157,16 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
     setIsEditing(true);
   };
 
-  const dayEvents = selectedDate ? getEventsByDate(selectedDate) : [];
+  const dayEvents = currentDate ? getEventsByDate(currentDate) : [];
   const canEdit = user?.hasPostingAccess && (isEditing || !event);
 
   return (
     <>
       <Modal isOpen={isOpen && !showDeleteDialog} onClose={onClose} className="max-w-2xl">
-        <ModalHeader>
+        <ModalHeader className="text-center">
           <ModalTitle>
             {event && !isEditing ? 'Event Details' : event ? 'Edit Event' : 'Create New Event'}
           </ModalTitle>
-          <ModalDescription>
-            {selectedDate?.toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </ModalDescription>
         </ModalHeader>
 
         {!canEdit && event ? (
@@ -278,16 +276,16 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
               />
             </div>
 
+            {/* Date and Time Range Input */}
+            <DateTimeRangeInput
+              selectedDate={currentDate}
+              onDateChange={setCurrentDate}
+              timeValue={formData.time}
+              onTimeChange={(value) => setFormData({ ...formData, time: value })}
+              required
+            />
+
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="time">Time *</Label>
-                <TimeInput
-                  id="time"
-                  value={formData.time}
-                  onChange={(value) => setFormData({ ...formData, time: value })}
-                  required
-                />
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="host">Host *</Label>
                 <Select value={formData.host} onValueChange={(value) => setFormData({ ...formData, host: value })}>
@@ -297,6 +295,20 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
                   <SelectContent>
                     {HOSTS.map(host => (
                       <SelectItem key={host} value={host}>{host}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="department">Department</Label>
+                <Select value={formData.department} onValueChange={(value) => setFormData({ ...formData, department: value as Department })}>
+                  <SelectTrigger id="department">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEPARTMENTS.map(dept => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -312,20 +324,6 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
                 placeholder="Enter location"
                 required
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="department">Department</Label>
-              <Select value={formData.department} onValueChange={(value) => setFormData({ ...formData, department: value as Department })}>
-                <SelectTrigger id="department">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {DEPARTMENTS.map(dept => (
-                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="space-y-2">

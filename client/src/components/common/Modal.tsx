@@ -74,7 +74,7 @@ export const Modal = ({ isOpen, onClose, children, className = '' }: ModalProps)
 
 export const ModalHeader = ({ children, className = '' }: ModalHeaderProps) => {
   return (
-    <div className={`flex flex-col gap-2 text-center sm:text-left mb-4 ${className}`}>
+    <div className={`flex flex-col gap-2 mb-4 ${className}`}>
       {children}
     </div>
   );

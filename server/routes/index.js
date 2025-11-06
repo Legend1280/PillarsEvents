@@ -127,14 +127,14 @@ router.post('/auth/register', async (req, res) => {
       });
     }
 
-    // Validate role - only 'user' or 'doctor' allowed (not 'admin')
-    if (role && !['user', 'doctor'].includes(role)) {
+    // Validate role - only 'member' or 'doctor' allowed (not 'admin')
+    if (role && !['member', 'doctor'].includes(role)) {
       return res.status(400).json({
-        error: 'Invalid role. Only "user" or "doctor" roles are allowed for registration'
+        error: 'Invalid role. Only "member" or "doctor" roles are allowed for registration'
       });
     }
 
-    const userRole = role || 'user'; // Default to 'user' if not specified
+    const userRole = role || 'member'; // Default to 'member' if not specified
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -164,7 +164,7 @@ router.post('/auth/register', async (req, res) => {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Doctors get posting access by default, users don't
+    // Doctors get posting access by default, members don't
     const hasPostingAccess = userRole === 'doctor';
 
     // Insert new user (created_at, updated_at auto-set by DB defaults)

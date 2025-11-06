@@ -32,4 +32,5 @@ export {
 } from './Modal';
 export { Loader } from './Loader';
 export { TimeInput } from './TimeInput';
+export { DateTimeRangeInput } from './DateTimeRangeInput';
 

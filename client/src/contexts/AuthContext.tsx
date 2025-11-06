@@ -5,7 +5,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  requestAccess: () => void;
+  requestAccess: () => Promise<{ success: boolean; message?: string; type?: 'success' | 'error' | 'auth-error' }>;
   initializing: boolean;
 }
 
@@ -122,8 +122,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        alert('You must be logged in to request access.');
-        return;
+        return {
+          success: false,
+          type: 'auth-error' as const,
+          message: 'You must be logged in to request access.'
+        };
       }
 
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/permissions/request-access`, {
@@ -140,13 +143,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
 
       if (response.ok) {
-        alert('✅ Access request sent to administrator successfully! You will be notified when approved.');
+        return {
+          success: true,
+          type: 'success' as const,
+          message: 'Access request sent to administrator successfully! You will be notified when approved.'
+        };
       } else {
-        alert(data.error || 'Failed to send access request. Please try again.');
+        return {
+          success: false,
+          type: 'error' as const,
+          message: data.error || 'Failed to send access request. Please try again.'
+        };
       }
     } catch (error) {
       console.error('Request access error:', error);
-      alert('Failed to send access request. Please check your connection and try again.');
+      return {
+        success: false,
+        type: 'error' as const,
+        message: 'Failed to send access request. Please check your connection and try again.'
+      };
     }
   };
 
