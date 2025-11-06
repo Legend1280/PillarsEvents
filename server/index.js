@@ -16,6 +16,7 @@ const allowedOrigins = new Set([
   'http://localhost:3000',
   'http://localhost:5173',
   'https://pillars-event-calendar.netlify.app',
+  'https://calendar.pillars.care',
 ]);
 
 app.use(cors({

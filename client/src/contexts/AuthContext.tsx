@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         // Try to fetch current user using /auth/me
-        const res = await fetch('https://server-production-9019.up.railway.app/api/auth/me', {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/me`, {
           method: 'GET',
           headers: { Authorization: `Bearer ${storedToken}` },
         });
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const refreshToken = localStorage.getItem('refreshToken');
           if (!refreshToken) throw new Error('no refresh token');
 
-          const refreshRes = await fetch('https://server-production-9019.up.railway.app/api/auth/refresh', {
+          const refreshRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/refresh`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refreshToken }),
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const { token: newToken } = await refreshRes.json();
           localStorage.setItem('token', newToken);
 
-          const retryRes = await fetch('https://server-production-9019.up.railway.app/api/auth/me', {
+          const retryRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/me`, {
             method: 'GET',
             headers: { Authorization: `Bearer ${newToken}` },
           });
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch('https://server-production-9019.up.railway.app/api/auth/login', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const response = await fetch('https://server-production-9019.up.railway.app/api/permissions/request-access', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/permissions/request-access`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
