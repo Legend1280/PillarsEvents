@@ -3,7 +3,7 @@ export interface User {
   email: string;
   name: string;
   hasPostingAccess: boolean;
-  role?: 'admin' | 'user';
+  role?: 'admin' | 'member';
 }
 
 export interface Event {

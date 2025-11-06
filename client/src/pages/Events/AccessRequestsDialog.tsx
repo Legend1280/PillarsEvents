@@ -65,7 +65,7 @@ export default function AccessRequestsDialog({ isOpen, onClose }: AccessRequests
       const data = await response.json();
 
       if (response.ok) {
-        toast.success(`Access granted to ${data.user?.name || 'user'}`);
+        toast.success(`Access granted to ${data.user?.name || 'member'}`);
         await fetchRequests();
       } else {
         toast.error(data.error || 'Failed to approve request');
@@ -145,7 +145,7 @@ export default function AccessRequestsDialog({ isOpen, onClose }: AccessRequests
       <ModalHeader>
         <ModalTitle>Access Requests Management</ModalTitle>
         <ModalDescription>
-          Review and manage user access requests for event posting permissions.
+          Review and manage member access requests for event posting permissions.
         </ModalDescription>
       </ModalHeader>
 

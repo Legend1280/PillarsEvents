@@ -11,7 +11,7 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<'user' | 'doctor'>('user');
+  const [role, setRole] = useState<'member' | 'doctor'>('member');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -111,19 +111,19 @@ export default function Register() {
 
             <div className="form-field">
               <Label htmlFor="role">Register as</Label>
-              <Select value={role} onValueChange={(value) => setRole(value as 'user' | 'doctor')}>
+              <Select value={role} onValueChange={(value) => setRole(value as 'member' | 'doctor')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="user">User (Requires Admin Approval for Posting)</SelectItem>
+                  <SelectItem value="member">Member (Requires Admin Approval for Posting)</SelectItem>
                   <SelectItem value="doctor">Doctor (Posting Access Granted)</SelectItem>
                 </SelectContent>
               </Select>
               <p className="role-note">
                 {role === 'doctor' 
                   ? '✅ Doctors get event posting access immediately' 
-                  : 'ℹ️ Users need admin approval to post events'}
+                  : 'ℹ️ Members need admin approval to post events'}
               </p>
             </div>
 

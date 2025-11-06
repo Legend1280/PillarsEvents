@@ -3,7 +3,7 @@ import { LogOut, Users } from 'lucide-react';
 
 interface HeaderProps {
   userName?: string;
-  userRole?: 'admin' | 'user';
+  userRole?: 'admin' | 'member';
   onLogout: () => void;
   onViewRequests?: () => void;
 }
