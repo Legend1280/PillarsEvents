@@ -157,7 +157,7 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
   return (
     <>
       <Modal isOpen={isOpen && !showDeleteDialog} onClose={onClose} className="max-w-2xl">
-        <ModalHeader>
+        <ModalHeader className="text-left">
           <ModalTitle>
             {event && !isEditing ? 'Event Details' : event ? 'Edit Event' : 'Create New Event'}
           </ModalTitle>

@@ -1,13 +1,17 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
 import { CheckCircle2, Lock } from 'lucide-react';
+import RequestAccessModal from '@/components/RequestAccessModal';
 import './Dashboard.css';
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { user, requestAccess, initializing } = useAuth();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalStatus, setModalStatus] = useState<'success' | 'error' | 'auth-error' | null>(null);
+  const [modalMessage, setModalMessage] = useState<string>('');
 
   useEffect(() => {
     // Only redirect if initialization is complete AND user is still null
@@ -30,6 +34,13 @@ export default function Dashboard() {
 
   const handleContinue = () => {
     setLocation('/calendar');
+  };
+
+  const handleRequestAccess = async () => {
+    const result = await requestAccess();
+    setModalStatus(result.type || null);
+    setModalMessage(result.message || '');
+    setModalOpen(true);
   };
 
   return (
@@ -85,7 +96,7 @@ export default function Dashboard() {
             </Button>
             {!user.hasPostingAccess && (
               <Button
-                onClick={requestAccess}
+                onClick={handleRequestAccess}
                 variant="outline"
                 className="w-full"
               >
@@ -101,6 +112,14 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Request Access Modal */}
+      <RequestAccessModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        status={modalStatus}
+        message={modalMessage}
+      />
     </div>
   );
 }

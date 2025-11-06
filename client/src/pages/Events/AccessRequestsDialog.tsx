@@ -142,7 +142,7 @@ export default function AccessRequestsDialog({ isOpen, onClose }: AccessRequests
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl max-h-[80vh] overflow-y-auto">
-      <ModalHeader>
+      <ModalHeader className="text-left">
         <ModalTitle>Access Requests Management</ModalTitle>
         <ModalDescription>
           Review and manage member access requests for event posting permissions.
