@@ -163,7 +163,7 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
   return (
     <>
       <Modal isOpen={isOpen && !showDeleteDialog} onClose={onClose} className="max-w-2xl">
-        <ModalHeader className="text-left">
+        <ModalHeader className="text-center">
           <ModalTitle>
             {event && !isEditing ? 'Event Details' : event ? 'Edit Event' : 'Create New Event'}
           </ModalTitle>
@@ -265,15 +265,6 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
         ) : (
           // Edit/Create mode
           <form onSubmit={(e) => { e.preventDefault(); handleSubmit('published'); }} className="space-y-4">
-            {/* Date and Time Range Input */}
-            <DateTimeRangeInput
-              selectedDate={currentDate}
-              onDateChange={setCurrentDate}
-              timeValue={formData.time}
-              onTimeChange={(value) => setFormData({ ...formData, time: value })}
-              required
-            />
-
             <div className="space-y-2">
               <Label htmlFor="title">Event Title *</Label>
               <Input
@@ -284,6 +275,15 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
                 required
               />
             </div>
+
+            {/* Date and Time Range Input */}
+            <DateTimeRangeInput
+              selectedDate={currentDate}
+              onDateChange={setCurrentDate}
+              timeValue={formData.time}
+              onTimeChange={(value) => setFormData({ ...formData, time: value })}
+              required
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

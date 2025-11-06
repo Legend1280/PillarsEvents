@@ -237,27 +237,31 @@ export const DateTimeRangeInput = ({
       <div className="flex items-center gap-3 py-3 rounded-lg">
         <Clock className="h-5 w-5 text-muted-foreground" />
         <div className="flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             {/* Date Button */}
-            <button
-              type="button"
-              onClick={() => {
-                setShowCalendar(!showCalendar);
-                setShowStartTimePicker(false);
-                setShowEndTimePicker(false);
-              }}
-              className={cn(
-                "text-sm font-medium text-foreground transition-colors px-2 py-1 rounded",
-                showCalendar 
-                  ? "border-b-2 border-primary" 
-                  : "hover:bg-muted/50"
-              )}
-            >
-              {displayDate}
-            </button>
-            
-            {/* Start Time */}
-            <div className="relative inline-block" ref={startTimePickerRef}>
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCalendar(!showCalendar);
+                  setShowStartTimePicker(false);
+                  setShowEndTimePicker(false);
+                }}
+                className={cn(
+                  "text-sm font-medium text-foreground transition-colors px-2 py-1 rounded",
+                  showCalendar 
+                    ? "border-b-2 border-primary" 
+                    : "hover:bg-muted/50"
+                )}
+              >
+                {displayDate}
+              </button>
+            </div>
+
+            {/* Time Range (Start and End together for mobile) */}
+            <div className="flex items-center gap-2">
+              {/* Start Time */}
+              <div className="relative inline-block" ref={startTimePickerRef}>
               <button
                 type="button"
                 onClick={() => {
@@ -293,12 +297,12 @@ export const DateTimeRangeInput = ({
                   ))}
                 </div>
               )}
-            </div>
-            
-            <span className="text-muted-foreground">-</span>
-            
-            {/* End Time */}
-            <div className="relative inline-block" ref={endTimePickerRef}>
+              </div>
+              
+              <span className="text-muted-foreground">-</span>
+              
+              {/* End Time */}
+              <div className="relative inline-block" ref={endTimePickerRef}>
               <button
                 type="button"
                 onClick={() => {
@@ -340,6 +344,7 @@ export const DateTimeRangeInput = ({
                   ))}
                 </div>
               )}
+              </div>
             </div>
           </div>
         </div>
