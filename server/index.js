@@ -15,6 +15,7 @@ app.use(morgan(':method :url :status :response-time ms'));
 const allowedOrigins = new Set([
   'http://localhost:3000',
   'http://localhost:5173',
+  'https://pillars-event-calendar.netlify.app/',
 ]);
 
 app.use(cors({
