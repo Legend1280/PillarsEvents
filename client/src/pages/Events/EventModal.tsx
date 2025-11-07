@@ -47,6 +47,8 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitType, setSubmitType] = useState<'draft' | 'published' | null>(null);
   const [currentDate, setCurrentDate] = useState<Date>(selectedDate || new Date());
   
   const [formData, setFormData] = useState({
@@ -105,6 +107,8 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
     };
 
     try {
+      setIsSubmitting(true);
+      setSubmitType(status);
       if (event) {
         await updateEvent(event.id, eventData);
         toast.success('Event updated successfully');
@@ -118,6 +122,9 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
       }
     } catch (error) {
       console.error('Error saving event:', error);
+    } finally {
+      setIsSubmitting(false);
+      setSubmitType(null);
     }
   };
 
@@ -358,14 +365,14 @@ export default function EventModal({ isOpen, onClose, selectedDate, event }: Eve
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="button" variant="secondary" onClick={() => handleSubmit('draft')}>
-                Save Draft
+              <Button type="button" variant="secondary" onClick={() => handleSubmit('draft')} disabled={isSubmitting}>
+                {isSubmitting && submitType === 'draft' ? 'Saving...' : 'Save Draft'}
               </Button>
-              <Button type="submit">
-                Publish Event
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && submitType === 'published' ? 'Publishing...' : 'Publish Event'}
               </Button>
             </div>
           </form>
