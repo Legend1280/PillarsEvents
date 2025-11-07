@@ -22,6 +22,13 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  padding: 0 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .calendar-navigation {
+    padding: 0;
+  }
 }
 
 .calendar-month-title {
@@ -30,6 +37,8 @@
   color: var(--color-foreground);
   min-width: 200px;
   text-align: center;
+  flex: 1;
+  padding: 0 0.25rem;
 }
 
 .calendar-actions {
